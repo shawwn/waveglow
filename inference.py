@@ -34,20 +34,20 @@ from denoiser import Denoiser
 def main(mel_files, waveglow_path, sigma, output_dir, sampling_rate, is_fp16,
          denoiser_strength):
     mel_files = files_to_list(mel_files)
-    waveglow = torch.load(waveglow_path)['model']
+    waveglow = torch.load(waveglow_path, map_location='cpu')['model']
     waveglow = waveglow.remove_weightnorm(waveglow)
-    waveglow.cuda().eval()
+    waveglow.cpu().eval()
     if is_fp16:
         from apex import amp
         waveglow, _ = amp.initialize(waveglow, [], opt_level="O3")
 
     if denoiser_strength > 0:
-        denoiser = Denoiser(waveglow).cuda()
+        denoiser = Denoiser(waveglow).cpu()
 
     for i, file_path in enumerate(mel_files):
         file_name = os.path.splitext(os.path.basename(file_path))[0]
-        mel = torch.load(file_path)
-        mel = torch.autograd.Variable(mel.cuda())
+        mel = torch.load(file_path, map_location='cpu')
+        mel = torch.autograd.Variable(mel.cpu())
         mel = torch.unsqueeze(mel, 0)
         mel = mel.half() if is_fp16 else mel
         with torch.no_grad():
